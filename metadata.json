@@ -1,0 +1,6 @@
+{
+  "name": "WebPC Emulator",
+  "description": "A browser-based x86 emulator with persistent virtual drive storage and ISO booting support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
