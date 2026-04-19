@@ -26,29 +26,30 @@ export default function App() {
   const [consoleOutput, setConsoleOutput] = useState<{msg: string, type: 'info' | 'error' | 'success'}[]>([]);
   const [powerOnProgress, setPowerOnProgress] = useState(0);
   
+  const [isEngineReady, setIsEngineReady] = useState(false);
+  
   const screenRef = useRef<HTMLDivElement>(null);
   const emulatorRef = useRef<any>(null);
   const isoFileRef = useRef<File | null>(null);
 
   useEffect(() => {
     checkDrive();
-    loadV86();
+    
+    // Check if v86 is already loaded from index.html
+    const checkEngine = setInterval(() => {
+      if (window.V86Starter) {
+        setIsEngineReady(true);
+        log('エミュレータ・エンジンが正常に配置されました。', 'success');
+        clearInterval(checkEngine);
+      }
+    }, 100);
+    
+    return () => clearInterval(checkEngine);
   }, []);
 
   const checkDrive = async () => {
     const available = await hasDrive();
     setIsDriveAvailable(available);
-  };
-
-  const loadV86 = () => {
-    if (window.V86Starter) return;
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/v86@latest/build/libv86.js';
-    script.async = true;
-    script.onload = () => {
-      log('エンジン (v86) の読み込みに成功しました。', 'success');
-    };
-    document.body.appendChild(script);
   };
 
   const log = (msg: string, type: 'info' | 'error' | 'success' = 'info') => {
@@ -193,6 +194,12 @@ export default function App() {
 
           <div className="flex items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-500">
             <div className="flex items-center gap-3">
+              <Cpu className={`w-3.5 h-3.5 ${isEngineReady ? 'text-blue-400' : 'text-amber-500 animate-spin'}`} />
+              <span className={isEngineReady ? 'text-white' : 'text-amber-500 italic font-black'}>
+                {isEngineReady ? 'Engine Ready' : 'Core Booting...'}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
               <Activity className={`w-3.5 h-3.5 ${isRunning ? 'text-green-500 animate-pulse' : 'text-slate-700'}`} />
               <span className={isRunning ? 'text-white' : ''}>{isRunning ? 'System Active' : 'Idle'}</span>
             </div>
@@ -266,11 +273,11 @@ export default function App() {
                 <div className="grid grid-cols-1 gap-4">
                   <button
                     onClick={() => setBootMode('drive')}
-                    disabled={!isDriveAvailable}
+                    disabled={!isDriveAvailable || !isEngineReady}
                     className={`group relative overflow-hidden flex items-center justify-between w-full p-6 rounded-3xl border-2 transition-all duration-300 ${
                       bootMode === 'drive' 
                         ? 'border-blue-500 bg-blue-500/10 text-white shadow-[0_0_40px_rgba(59,130,246,0.15)]' 
-                        : isDriveAvailable 
+                        : (isDriveAvailable && isEngineReady) 
                           ? 'border-white/5 bg-white/[0.02] hover:border-white/20 text-slate-400 hover:text-white' 
                           : 'border-white/5 bg-white/5 opacity-30 cursor-not-allowed grayscale'
                     }`}
@@ -289,10 +296,13 @@ export default function App() {
                   
                   <button
                     onClick={() => setBootMode('iso')}
+                    disabled={!isEngineReady}
                     className={`group relative overflow-hidden flex items-center justify-between w-full p-6 rounded-3xl border-2 transition-all duration-300 ${
                       bootMode === 'iso' 
                         ? 'border-emerald-500 bg-emerald-500/10 text-white shadow-[0_0_40px_rgba(16,185,129,0.15)]' 
-                        : 'border-white/5 bg-white/[0.02] hover:border-white/20 text-slate-400 hover:text-white'
+                        : isEngineReady
+                          ? 'border-white/5 bg-white/[0.02] hover:border-white/20 text-slate-400 hover:text-white'
+                          : 'border-white/5 bg-white/5 opacity-30 cursor-not-allowed grayscale'
                     }`}
                   >
                     <div className="flex items-center gap-5 relative z-10">
